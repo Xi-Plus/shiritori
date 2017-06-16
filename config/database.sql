@@ -1,0 +1,51 @@
+SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+SET AUTOCOMMIT = 0;
+START TRANSACTION;
+SET time_zone = "+00:00";
+
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!40101 SET NAMES utf8mb4 */;
+
+
+CREATE TABLE `shiritori_input` (
+  `time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `input` text NOT NULL,
+  `hash` varchar(32) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE `shiritori_log` (
+  `time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `message` text NOT NULL,
+  `hash` varchar(32) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE `shiritori_user` (
+  `uid` varchar(255) NOT NULL,
+  `tmid` varchar(255) NOT NULL,
+  `sid` varchar(255) NOT NULL DEFAULT '',
+  `name` varchar(255) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE `shiritori_word` (
+  `word` varchar(255) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+
+ALTER TABLE `shiritori_input`
+  ADD UNIQUE KEY `hash` (`hash`);
+
+ALTER TABLE `shiritori_log`
+  ADD UNIQUE KEY `hash` (`hash`);
+
+ALTER TABLE `shiritori_user`
+  ADD UNIQUE KEY `tmid` (`tmid`);
+
+ALTER TABLE `shiritori_word`
+  ADD UNIQUE KEY `word` (`word`);
+COMMIT;
+
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
