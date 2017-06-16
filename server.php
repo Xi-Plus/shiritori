@@ -118,6 +118,14 @@ foreach ($row as $data) {
 						}
 						break;
 					
+					case '/help':
+						$msg = "可用命令\n".
+							"/giveup 放棄結束遊戲\n".
+							"/tip 取得詞語提示\n".
+							"/help 顯示本命令列表";
+						SendMessage($tmid, $msg);
+						break;
+					
 					default:
 						SendMessage($tmid, "沒有這個命令");
 						break;
@@ -131,7 +139,8 @@ foreach ($row as $data) {
 			if (count($used) > 0) {
 				$last = end($used);
 				if (mb_substr($last, -1) != mb_substr($input, 0, 1)) {
-					SendMessage($tmid, "您輸入的詞語不銜接上一個詞「".$last."」");
+					SendMessage($tmid, "您輸入的詞語不銜接上一個詞「".$last."」\n".
+					"取得命令列表輸入 /help");
 					continue;
 				}
 			}
@@ -144,7 +153,8 @@ foreach ($row as $data) {
 			$res = $sth->execute();
 			$data = $sth->fetch(PDO::FETCH_ASSOC);
 			if ($data === false) {
-				SendMessage($tmid, "您輸入的詞語在辭典裡找不到，請再想一個");
+				SendMessage($tmid, "您輸入的詞語在辭典裡找不到，請再想一個\n".
+					"取得命令列表輸入 /help");
 				continue;
 			}
 			$used[] = $input;
