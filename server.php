@@ -208,6 +208,9 @@ foreach ($row as $temp) {
 				$data["word"][] = $word;
 				$wordlist = GetWords($word, $data["word"]);
 				$msg = $word." (".count($wordlist).")";
+				if ($data["score"] % 10 == 0) {
+					$msg .= "\n您達到 ".$data["score"]." 分了！";
+				}
 				if (count($wordlist) <= 10 && count($wordlist) > 0) {
 					$msg .= "\n想不到可輸入 /tip";
 				}
