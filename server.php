@@ -154,6 +154,7 @@ foreach ($row as $data) {
 			$data = $sth->fetch(PDO::FETCH_ASSOC);
 			if ($data === false) {
 				SendMessage($tmid, "您輸入的詞語在辭典裡找不到，請再想一個\n".
+					"想不到可輸入 /tip\n".
 					"取得命令列表輸入 /help");
 				continue;
 			}
@@ -165,9 +166,13 @@ foreach ($row as $data) {
 				$used = [];
 			} else {
 				$word = $wordlist[array_rand($wordlist)];
-				SendMessage($tmid, $word);
 				$used[] = $word;
 				$wordlist = GetWords($word, $used);
+				$msg = $word." (".count($wordlist).")";
+				if (count($wordlist) <= 10 && count($wordlist) > 0) {
+					$msg .= "\n想不到可輸入 /tip";
+				}
+				SendMessage($tmid, $msg);
 				if (count($wordlist) == 0) {
 					SendMessage($tmid, "已經沒有可以接的詞語了，您輸了！");
 					SendMessage($tmid, "我們共講出了".count($used)."個詞語：\n".implode("、", $used));
