@@ -42,7 +42,7 @@ function GetTmid() {
 				if ($participants["id"] != $C['FBpageid']) {
 					$sth = $G["db"]->prepare("INSERT INTO `{$C['DBTBprefix']}user` (`uid`, `tmid`, `name`) VALUES (:uid, :tmid, :name)");
 					$sth->bindValue(":uid", $participants["id"]);
-					$sth->bindValue(":tmid", $data["id"]);
+					$sth->bindValue(":tmid", $temp["id"]);
 					$sth->bindValue(":name", $participants["name"]);
 					$res = $sth->execute();
 					break;
