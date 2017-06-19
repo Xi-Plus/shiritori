@@ -126,7 +126,10 @@ foreach ($row as $temp) {
 							}
 							file_put_contents($datapath, json_encode($data, JSON_UNESCAPED_UNICODE));
 						} else {
-							SendMessage($tmid, "請隨便輸入一個詞語吧");
+							$wordlist = GetWords("", $data["word"]);
+							$word = $wordlist[array_rand($wordlist)];
+							SendMessage($tmid, "請隨意輸入一個詞語\n".
+								"想從「".$word."」開始嗎？");
 						}
 						break;
 					
@@ -190,8 +193,10 @@ foreach ($row as $temp) {
 						"想不到可輸入 /tip\n".
 						"取得命令列表輸入 /help");
 				} else {
-					$data["score"] += $C['ScoreNotfound'];
+					$wordlist = GetWords("", $data["word"]);
+					$word = $wordlist[array_rand($wordlist)];
 					SendMessage($tmid, "您輸入的詞語在辭典裡找不到，請再想一個\n".
+						"或者可以從「".$word."」開始？\n".
 						"取得命令列表輸入 /help");
 				}
 				if ($data["score"] < 0) {
