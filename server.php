@@ -183,11 +183,17 @@ foreach ($row as $temp) {
 			$res = $sth->execute();
 			$row = $sth->fetch(PDO::FETCH_ASSOC);
 			if ($row === false) {
-				$data["score"] += $C['ScoreNotfound'];
-				SendMessage($tmid, "您輸入的詞語在辭典裡找不到，請再想一個\n".
-					"您分數剩下 ".$data["score"]."\n".
-					"想不到可輸入 /tip\n".
-					"取得命令列表輸入 /help");
+				if (count($data["word"]) > 0) {
+					$data["score"] += $C['ScoreNotfound'];
+					SendMessage($tmid, "您輸入的詞語在辭典裡找不到，請再想一個\n".
+						"您分數剩下 ".$data["score"]."\n".
+						"想不到可輸入 /tip\n".
+						"取得命令列表輸入 /help");
+				} else {
+					$data["score"] += $C['ScoreNotfound'];
+					SendMessage($tmid, "您輸入的詞語在辭典裡找不到，請再想一個\n".
+						"取得命令列表輸入 /help");
+				}
 				if ($data["score"] < 0) {
 					SendMessage($tmid, "您的分數被扣光了，您輸了！");
 					$data = ["score" => $C['ScoreStart'], "word" => []];
