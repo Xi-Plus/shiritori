@@ -8,6 +8,7 @@ require(__DIR__.'/function/curl.php');
 require(__DIR__.'/function/sendmessage.php');
 require(__DIR__.'/function/log.php');
 require(__DIR__.'/function/word.php');
+require(__DIR__.'/function/game.php');
 
 $sth = $G["db"]->prepare("SELECT * FROM `{$C['DBTBprefix']}input` ORDER BY `time` ASC");
 $res = $sth->execute();
@@ -87,63 +88,65 @@ foreach ($row as $temp) {
 				SendMessage($tmid, "僅可輸入文字");
 				continue;
 			}
-			$datapath = __DIR__."/data/".$sid.".json";
-			$data = @file_get_contents($datapath);
-			if ($data === false) {
-				$data = ["score" => $C['ScoreStart'], "word" => []];
-			} else {
-				$data = json_decode($data, true);
-			}
+			$game = new Game($sid);
 			$input = $messaging['message']['text'];
 			if ($input[0] == "/") {
 				switch ($input) {
 					case '/giveup':
-						$last = end($data["word"]);
-						$wordlist = GetWords($last, $data["word"]);
+						$last = $game->getlastword();
+						$wordlist = GetWords($last, $game->getwordlist());
 						$word = $wordlist[array_rand($wordlist)];
-						if (count($data["word"]) > 0) {
+						if ($game->isstart()) {
 							SendMessage($tmid, "您放棄了，沒有想到「".$word."」嗎？\n".
-								"您分數剩下 ".$data["score"]);
-							SendMessage($tmid, "我們共講出了".count($data["word"])."個詞語：\n".implode("、", $data["word"]));
+								"您分數剩下 ".$game->getscore());
+							SendMessage($tmid, "我們共講出了".$game->getwordcount()."個詞語：\n".$game->printwordlist());
+							$game->restart();
+							unset($game);
 						} else {
 							SendMessage($tmid, "您還沒開始就放棄了，下次可以從「".$word."」開始");
 						}
-						$data = ["score" => $C['ScoreStart'], "word" => []];
-						file_put_contents($datapath, json_encode($data, JSON_UNESCAPED_UNICODE));
 						break;
 					
 					case '/tip':
-						if (count($data["word"]) > 0) {
-							$data["score"] += $C['ScoreTip'];
-							$last = end($data["word"]);
-							$wordlist = GetWords($last, $data["word"]);
-							$word = $wordlist[array_rand($wordlist)];
-							SendMessage($tmid, "試試「".$word."」？\n".
-								"您分數剩下 ".$data["score"]);
-							if ($data["score"] < 0) {
-								SendMessage($tmid, "您的分數被扣光了，您輸了！");
-								$data = ["score" => $C['ScoreStart'], "word" => []];
+						if ($game->isstart()) {
+							if (($score = $game->usetip()) !== false) {
+								$last = $game->getlastword();
+								$wordlist = GetWords($last, $game->getwordlist());
+								$word = $wordlist[array_rand($wordlist)];
+								SendMessage($tmid, "試試「".$word."」？\n".
+									"您分數剩下 ".$data["score"]);
+								unset($game);
+							} else {
+								SendMessage($tmid, "您沒有足夠的分數可以使用提示");
 							}
-							file_put_contents($datapath, json_encode($data, JSON_UNESCAPED_UNICODE));
 						} else {
-							$wordlist = GetWords("", $data["word"]);
+							$wordlist = GetWords("", $game->getwordlist());
 							$word = $wordlist[array_rand($wordlist)];
 							SendMessage($tmid, "請隨意輸入一個詞語\n".
 								"想從「".$word."」開始嗎？");
 						}
 						break;
 					
+					case '/list':
+						if ($game->isstart()) {
+							SendMessage($tmid, "我們已講出了".$game->getwordcount()."個詞語：\n".$game->printwordlist());
+						} else {
+							SendMessage($tmid, "遊戲還沒開始");
+						}
+						break;
+					
 					case '/score':
-						SendMessage($tmid, "您分數剩下 ".$data["score"]);
+						SendMessage($tmid, "您分數剩下 ".$game->getscore());
 						break;
 					
 					case '/rule':
+						$rule = $game->getrule();
 						SendMessage($tmid, "分數規則\n".
-							"起始分數 ".sprintf("%+d", $C['ScoreStart'])." 分\n".
-							"答案不在辭典 ".sprintf("%+d", $C['ScoreNotfound'])." 分\n".
-							"使用提示 ".sprintf("%+d", $C['ScoreTip'])." 分\n".
-							"回答重複 ".sprintf("%+d", $C['ScoreRepeat'])." 分\n".
-							"回答正確 ".sprintf("%+d", $C['ScoreAnswer'])." 分");
+							"起始分數 ".sprintf("%+d", $rule['Start'])." 分\n".
+							"答案不在辭典 ".sprintf("%+d", $rule['Notfound'])." 分\n".
+							"使用提示 ".sprintf("%+d", $rule['Tip'])." 分\n".
+							"回答重複 ".sprintf("%+d", $rule['Repeat'])." 分\n".
+							"回答正確 ".sprintf("%+d", $rule['Answer'])." 分");
 						break;
 					
 					case '/help':
@@ -166,19 +169,15 @@ foreach ($row as $temp) {
 				SendMessage($tmid, "必須輸入2個字或以上");
 				continue;
 			}
-			if (count($data["word"]) > 0) {
-				$last = end($data["word"]);
-				if (mb_substr($last, -1) != mb_substr($input, 0, 1)) {
-					SendMessage($tmid, "您輸入的詞語不銜接上一個詞「".$last."」\n".
+			if ($game->checkanadiplosis($input)) {
+				SendMessage($tmid, "您輸入的詞語不銜接上一個詞「".$game->getlastword()."」\n".
 					"取得命令列表輸入 /help");
-					continue;
-				}
+				continue;
 			}
-			if (in_array($input, $data["word"])) {
-				$data["score"] += $C['ScoreRepeat'];
+			if (($score = $game->checkrepeat($input)) !== false) {
 				SendMessage($tmid, "這個詞已經用過了，請再想一個\n".
-					"您分數剩下 ".$data["score"]);
-				file_put_contents($datapath, json_encode($data, JSON_UNESCAPED_UNICODE));
+					"您分數剩下 ".$score);
+				unset($game);
 				continue;
 			}
 			$sth = $G["db"]->prepare("SELECT * FROM `{$C['DBTBprefix']}word` WHERE `word` = :word");
@@ -186,54 +185,61 @@ foreach ($row as $temp) {
 			$res = $sth->execute();
 			$row = $sth->fetch(PDO::FETCH_ASSOC);
 			if ($row === false) {
-				if (count($data["word"]) > 0) {
-					$data["score"] += $C['ScoreNotfound'];
-					SendMessage($tmid, "您輸入的詞語在辭典裡找不到，請再想一個\n".
-						"您分數剩下 ".$data["score"]."\n".
-						"想不到可輸入 /tip\n".
-						"取得命令列表輸入 /help");
+				if ($game->isstart()) {
+					$score = $game->notfound();
+					if ($game->checklost()) {
+						SendMessage($tmid, "您輸入的詞語在辭典裡找不到\n".
+							"您的分數被扣光了，您輸了");
+						SendMessage($tmid, "我們共講出了".$game->getwordcount()."個詞語：\n".$game->printwordlist());
+						$game->restart();
+					} else {
+						SendMessage($tmid, "您輸入的詞語在辭典裡找不到，請再想一個\n".
+							"您分數剩下 ".$score."\n".
+							"想不到可輸入 /tip\n".
+							"取得命令列表輸入 /help");
+					}
+					unset($game);
 				} else {
-					$wordlist = GetWords("", $data["word"]);
+					$wordlist = GetWords("", $game->getwordlist());
 					$word = $wordlist[array_rand($wordlist)];
 					SendMessage($tmid, "您輸入的詞語在辭典裡找不到，請再想一個\n".
 						"或者可以從「".$word."」開始？\n".
 						"取得命令列表輸入 /help");
 				}
-				if ($data["score"] < 0) {
-					SendMessage($tmid, "您的分數被扣光了，您輸了！");
-					$data = ["score" => $C['ScoreStart'], "word" => []];
-				}
-				file_put_contents($datapath, json_encode($data, JSON_UNESCAPED_UNICODE));
 				continue;
 			}
-			$data["score"] += $C['ScoreAnswer'];
-			$data["word"][] = $input;
-			$wordlist = GetWords($input, $data["word"]);
+			$score = $game->answer($input);
+			$wordlist = GetWords($input, $game->getwordlist());
 			if (count($wordlist) == 0) {
 				SendMessage($tmid, "已經沒有可以接的詞語了，您獲勝了！\n".
 					"您剩下的分數是 ".$data["score"]);
-				SendMessage($tmid, "我們共講出了".count($data["word"])."個詞語：\n".implode("、", $data["word"]));
-				$data = ["score" => $C['ScoreStart'], "word" => []];
+				SendMessage($tmid, "我們共講出了".$game->getwordcount()."個詞語：\n".$game->printwordlist());
+				$game->restart();
+				unset($game);
 			} else {
 				$word = $wordlist[array_rand($wordlist)];
-				$data["word"][] = $word;
-				$wordlist = GetWords($word, $data["word"]);
-				$msg = $word." (".count($wordlist).")";
-				if ($data["score"] % 10 == 0) {
-					$msg .= "\n您達到 ".$data["score"]." 分了！";
-				}
-				if (count($wordlist) <= 10 && count($wordlist) > 0) {
-					$msg .= "\n想不到可輸入 /tip";
-				}
-				SendMessage($tmid, $msg);
+				$game->addword($word);
+				$wordlist = GetWords($word, $game->getwordlist());
+				$msg = $word;
 				if (count($wordlist) == 0) {
+					SendMessage($tmid, $msg);
 					SendMessage($tmid, "已經沒有可以接的詞語了，您輸了！\n".
 						"您分數剩下 ".$data["score"]);
-					SendMessage($tmid, "我們共講出了".count($data["word"])."個詞語：\n".implode("、", $data["word"]));
-					$data = ["score" => $C['ScoreStart'], "word" => []];
+					SendMessage($tmid, "我們共講出了".$game->getwordcount()."個詞語：\n".$game->printwordlist());
+					$game->restart();
+					unset($game);
+				} else {
+					$msg .= " (".count($wordlist).")";
+					if ($score % 10 == 0) {
+						$msg .= "\n您達到 ".$score." 分了！";
+					}
+					if (count($wordlist) <= 10 && count($wordlist) > 0) {
+						$msg .= "\n想不到可輸入 /tip";
+					}
+					SendMessage($tmid, $msg);
+					unset($game);
 				}
 			}
-			file_put_contents($datapath, json_encode($data, JSON_UNESCAPED_UNICODE));
 		}
 	}
 }
