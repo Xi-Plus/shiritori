@@ -16,3 +16,14 @@ function GetWords($start, $used = array()) {
 	}
 	return $wordlist;
 }
+function NewWord($word) {
+	global $C, $G;
+	$sth = $G["db"]->prepare("INSERT INTO `{$C['DBTBprefix']}word` (`word`, `source`) VALUES (:word, '2')");
+	$sth->bindValue(":word", $word);
+	$res = $sth->execute();
+	if ($res === false) {
+		WriteLog("write new word fail: ".$sth->errorInfo()[2]);
+	} else {
+		WriteLog("new word ".$word);
+	}
+}

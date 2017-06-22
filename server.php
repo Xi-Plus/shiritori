@@ -190,6 +190,7 @@ foreach ($row as $temp) {
 				$temp = $dict->search("^".$input."$", true);
 				if (isset($temp["ok"]) && $temp["ok"] > 0) {
 					$row = true;
+					NewWord($input);
 				}
 			}
 			if ($row === false) {
@@ -217,7 +218,8 @@ foreach ($row as $temp) {
 				continue;
 			}
 			$score = $game->answer($input);
-			$wordlist = GetWords($input, $game->getwordlist());
+			$allwordlist = GetWords($input, []);
+			$wordlist = array_diff($allwordlist, $game->getwordlist());
 			if (count($wordlist) == 0) {
 				$temp = $dict->search("^".mb_substr($input, -1), true);
 				if (isset($temp["ok"]) && $temp["ok"] > 1) {
@@ -226,6 +228,8 @@ foreach ($row as $temp) {
 					foreach ($wordlist as $key => $value) {
 						if (mb_strlen($value) < 2) {
 							unset($wordlist[$key]);
+						} else if (!in_array($value, $allwordlist)) {
+							NewWord($value);
 						}
 					}
 					WriteLog(json_encode($temp, JSON_UNESCAPED_UNICODE));
@@ -240,7 +244,8 @@ foreach ($row as $temp) {
 			} else {
 				$word = $wordlist[array_rand($wordlist)];
 				$game->addword($word);
-				$wordlist = GetWords($word, $game->getwordlist());
+				$allwordlist = GetWords($word, []);
+				$wordlist = array_diff($allwordlist, $game->getwordlist());
 				$msg = $word;
 				if (count($wordlist) == 0) {
 					$temp = $dict->search("^".mb_substr($word, -1), true);
@@ -250,6 +255,8 @@ foreach ($row as $temp) {
 						foreach ($wordlist as $key => $value) {
 							if (mb_strlen($value) < 2) {
 								unset($wordlist[$key]);
+							} else if (!in_array($value, $allwordlist)) {
+								NewWord($value);
 							}
 						}
 					}
