@@ -115,7 +115,7 @@ foreach ($row as $temp) {
 								$wordlist = GetWords($last, $game->getwordlist());
 								$word = $wordlist[array_rand($wordlist)];
 								SendMessage($tmid, "試試「".$word."」？\n".
-									"您分數剩下 ".$data["score"]);
+									"您分數剩下 ".$game->getscore());
 								unset($game);
 							} else {
 								SendMessage($tmid, "您沒有足夠的分數可以使用提示");
@@ -257,7 +257,7 @@ foreach ($row as $temp) {
 				if (count($wordlist) == 0) {
 					SendMessage($tmid, $msg);
 					SendMessage($tmid, "已經沒有可以接的詞語了，您輸了！\n".
-						"您分數剩下 ".$data["score"]);
+						"您分數剩下 ".$game->getscore());
 					SendMessage($tmid, "我們共講出了".$game->getwordcount()."個詞語：\n".$game->printwordlist());
 					$game->restart();
 					unset($game);
