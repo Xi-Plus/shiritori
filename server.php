@@ -4,7 +4,7 @@ if (!in_array(PHP_SAPI, $C["allowsapi"])) {
 	exit("No permission");
 }
 
-require(__DIR__.'/function/curl.php');
+require($C['Module']['TW-MOE-Dict']);
 require(__DIR__.'/function/sendmessage.php');
 require(__DIR__.'/function/log.php');
 require(__DIR__.'/function/word.php');
@@ -54,6 +54,7 @@ function GetTmid() {
 	}
 	file_put_contents(__DIR__."/data/updated_time.txt", $newesttime);
 }
+$dict = new TWMOEDict();
 foreach ($row as $temp) {
 	$input = json_decode($temp["input"], true);
 	foreach ($input['entry'] as $entry) {
@@ -185,6 +186,13 @@ foreach ($row as $temp) {
 			$res = $sth->execute();
 			$row = $sth->fetch(PDO::FETCH_ASSOC);
 			if ($row === false) {
+				WriteLog("try to check ".$input);
+				$temp = $dict->search("^".$input."$", true);
+				if (isset($temp["ok"]) && $temp["ok"] > 0) {
+					$row = true;
+				}
+			}
+			if ($row === false) {
 				if ($game->isstart()) {
 					$score = $game->notfound();
 					if ($game->checklost()) {
@@ -211,8 +219,21 @@ foreach ($row as $temp) {
 			$score = $game->answer($input);
 			$wordlist = GetWords($input, $game->getwordlist());
 			if (count($wordlist) == 0) {
-				SendMessage($tmid, "已經沒有可以接的詞語了，您獲勝了！\n".
-					"您剩下的分數是 ".$data["score"]);
+				$temp = $dict->search("^".mb_substr($input, -1), true);
+				if (isset($temp["ok"]) && $temp["ok"] > 1) {
+					$temp = array_keys($temp["result"]);
+					$wordlist = array_diff($temp, $game->getwordlist());
+					foreach ($wordlist as $key => $value) {
+						if (mb_strlen($value) < 2) {
+							unset($wordlist[$key]);
+						}
+					}
+					WriteLog(json_encode($temp, JSON_UNESCAPED_UNICODE));
+				}
+			}
+			if (count($wordlist) == 0) {
+				SendMessage($tmid, "已經沒有可以接的詞語了，您獲勝了！".($onlinecheck?"*":"")."\n".
+					"您剩下的分數是 ".$game->getscore());
 				SendMessage($tmid, "我們共講出了".$game->getwordcount()."個詞語：\n".$game->printwordlist());
 				$game->restart();
 				unset($game);
@@ -221,6 +242,18 @@ foreach ($row as $temp) {
 				$game->addword($word);
 				$wordlist = GetWords($word, $game->getwordlist());
 				$msg = $word;
+				if (count($wordlist) == 0) {
+					$temp = $dict->search("^".mb_substr($word, -1), true);
+					if (isset($temp["ok"]) && $temp["ok"] > 1) {
+						$temp = array_keys($temp["result"]);
+						$wordlist = array_diff($temp, $game->getwordlist());
+						foreach ($wordlist as $key => $value) {
+							if (mb_strlen($value) < 2) {
+								unset($wordlist[$key]);
+							}
+						}
+					}
+				}
 				if (count($wordlist) == 0) {
 					SendMessage($tmid, $msg);
 					SendMessage($tmid, "已經沒有可以接的詞語了，您輸了！\n".

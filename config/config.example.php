@@ -21,4 +21,6 @@ $C['LogKeep'] = 86400*7;
 
 $C["allowsapi"] = array("cli");
 
+$C['Module']['TW-MOE-Dict'] = __DIR__."/../function/TW-MOE-Dict/dict.php";
+
 $G["db"] = new PDO ('mysql:host='.$C["DBhost"].';dbname='.$C["DBname"].';charset=utf8', $C["DBuser"], $C["DBpass"]);
