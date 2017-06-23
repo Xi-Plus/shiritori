@@ -170,6 +170,11 @@ foreach ($row as $temp) {
 				SendMessage($tmid, "必須輸入2個字或以上");
 				continue;
 			}
+			if (preg_match("/[A-Za-z0-9]+/", $input) || strpbrk($input, ",.\/:;'\"<>?[]{}\\|-=_+*()~!@#$%\^&") !== false) {
+				SendMessage($tmid, "僅可輸入中文字及中文標點符號\n".
+					"取得命令列表輸入 /help");
+				continue;
+			}
 			if ($game->checkanadiplosis($input)) {
 				SendMessage($tmid, "您輸入的詞語不銜接上一個詞「".$game->getlastword()."」\n".
 					"取得命令列表輸入 /help");
