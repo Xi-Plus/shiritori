@@ -16,14 +16,15 @@ function GetWords($start, $used = array()) {
 	}
 	return $wordlist;
 }
-function NewWord($word) {
+function NewWord($word, $source = 2) {
 	global $C, $G;
-	$sth = $G["db"]->prepare("INSERT INTO `{$C['DBTBprefix']}word` (`word`, `source`) VALUES (:word, '2')");
+	$sth = $G["db"]->prepare("INSERT INTO `{$C['DBTBprefix']}word` (`word`, `source`) VALUES (:word, :source)");
 	$sth->bindValue(":word", $word);
+	$sth->bindValue(":source", $source);
 	$res = $sth->execute();
 	if ($res === false) {
 		WriteLog("write new word fail: ".$sth->errorInfo()[2]);
 	} else {
-		WriteLog("new word ".$word);
+		WriteLog("new word ".$source." ".$word);
 	}
 }

@@ -29,7 +29,8 @@ CREATE TABLE `shiritori_user` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE `shiritori_word` (
-  `word` varchar(255) NOT NULL
+  `word` varchar(255) NOT NULL,
+  `source` tinyint(4) NOT NULL DEFAULT '1'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 

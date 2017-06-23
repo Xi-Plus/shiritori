@@ -191,6 +191,18 @@ foreach ($row as $temp) {
 			$res = $sth->execute();
 			$row = $sth->fetch(PDO::FETCH_ASSOC);
 			if ($row === false) {
+				if (file_get_contents("https://zh.wikipedia.org/wiki/".$input."?action=raw") !== false) {
+					$row = true;
+					NewWord($input, 3);
+				}
+			}
+			if ($row === false) {
+				if (file_get_contents("https://zh.wiktionary.org/wiki/".$input."?action=raw") !== false) {
+					$row = true;
+					NewWord($input, 4);
+				}
+			}
+			if ($row === false) {
 				WriteLog("try to check ".$input);
 				$temp = $dict->search("^".$input."$", true);
 				if (isset($temp["ok"]) && $temp["ok"] > 0) {
