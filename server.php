@@ -241,11 +241,20 @@ foreach ($row as $temp) {
 				}
 			}
 			if (count($wordlist) == 0) {
-				SendMessage($tmid, "已經沒有可以接的詞語了，您獲勝了！".($onlinecheck?"*":"")."\n".
-					"您剩下的分數是 ".$game->getscore());
-				SendMessage($tmid, "我們共講出了".$game->getwordcount()."個詞語：\n".$game->printwordlist());
-				$game->restart();
-				unset($game);
+				if ($game->getwordcount() <= 1) {
+					$wordlist = GetWords("", $game->getwordlist());
+					$word = $wordlist[array_rand($wordlist)];
+					SendMessage($tmid, "沒有可以銜接這個詞的詞語，請再想一個\n".
+						"或者可以從「".$word."」開始？");
+					$game->restart();
+					unset($game);
+				} else {
+					SendMessage($tmid, "已經沒有可以接的詞語了，您獲勝了！".($onlinecheck?"*":"")."\n".
+						"您剩下的分數是 ".$game->getscore());
+					SendMessage($tmid, "我們共講出了".$game->getwordcount()."個詞語：\n".$game->printwordlist());
+					$game->restart();
+					unset($game);
+				}
 			} else {
 				$word = $wordlist[array_rand($wordlist)];
 				$game->addword($word);
