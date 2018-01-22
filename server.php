@@ -91,79 +91,82 @@ foreach ($row as $temp) {
 			}
 			$game = new Game($sid);
 			$input = $messaging['message']['text'];
-			if ($input[0] == "/") {
-				switch ($input) {
-					case '/giveup':
-						$last = $game->getlastword();
-						$wordlist = GetWords($last, $game->getwordlist());
-						$word = $wordlist[array_rand($wordlist)];
-						if ($game->isstart()) {
-							SendMessage($tmid, "您放棄了，沒有想到「".$word."」嗎？\n".
+			$iscommand = false;
+			switch ($input) {
+				case 'giveup':
+					$last = $game->getlastword();
+					$wordlist = GetWords($last, $game->getwordlist());
+					$word = $wordlist[array_rand($wordlist)];
+					if ($game->isstart()) {
+						SendMessage($tmid, "您放棄了，沒有想到「".$word."」嗎？\n".
+							"您分數剩下 ".$game->getscore());
+						SendMessage($tmid, "我們共講出了".$game->getwordcount()."個詞語：\n".$game->printwordlist());
+						$game->restart();
+						unset($game);
+					} else {
+						SendMessage($tmid, "您還沒開始就放棄了，下次可以從「".$word."」開始");
+					}
+					$iscommand = true;
+					break;
+				
+				case 'hint':
+					if ($game->isstart()) {
+						if (($score = $game->usetip()) !== false) {
+							$last = $game->getlastword();
+							$wordlist = GetWords($last, $game->getwordlist());
+							$word = $wordlist[array_rand($wordlist)];
+							SendMessage($tmid, "試試「".$word."」？\n".
 								"您分數剩下 ".$game->getscore());
-							SendMessage($tmid, "我們共講出了".$game->getwordcount()."個詞語：\n".$game->printwordlist());
-							$game->restart();
 							unset($game);
 						} else {
-							SendMessage($tmid, "您還沒開始就放棄了，下次可以從「".$word."」開始");
+							SendMessage($tmid, "您沒有足夠的分數可以使用提示");
 						}
-						break;
-					
-					case '/tip':
-						if ($game->isstart()) {
-							if (($score = $game->usetip()) !== false) {
-								$last = $game->getlastword();
-								$wordlist = GetWords($last, $game->getwordlist());
-								$word = $wordlist[array_rand($wordlist)];
-								SendMessage($tmid, "試試「".$word."」？\n".
-									"您分數剩下 ".$game->getscore());
-								unset($game);
-							} else {
-								SendMessage($tmid, "您沒有足夠的分數可以使用提示");
-							}
-						} else {
-							$wordlist = GetWords("", $game->getwordlist());
-							$word = $wordlist[array_rand($wordlist)];
-							SendMessage($tmid, "請隨意輸入一個詞語\n".
-								"想從「".$word."」開始嗎？");
-						}
-						break;
-					
-					case '/list':
-						if ($game->isstart()) {
-							SendMessage($tmid, "我們已講出了".$game->getwordcount()."個詞語：\n".$game->printwordlist());
-						} else {
-							SendMessage($tmid, "遊戲還沒開始");
-						}
-						break;
-					
-					case '/score':
-						SendMessage($tmid, "您分數剩下 ".$game->getscore());
-						break;
-					
-					case '/rule':
-						$rule = $game->getrule();
-						SendMessage($tmid, "分數規則\n".
-							"起始分數 ".sprintf("%+d", $rule['Start'])." 分\n".
-							"答案不在辭典 ".sprintf("%+d", $rule['Notfound'])." 分\n".
-							"使用提示 ".sprintf("%+d", $rule['Tip'])." 分\n".
-							"回答重複 ".sprintf("%+d", $rule['Repeat'])." 分\n".
-							"回答正確 ".sprintf("%+d", $rule['Answer'])." 分");
-						break;
-					
-					case '/help':
-						$msg = "可用命令\n".
-							"/giveup 放棄結束遊戲\n".
-							"/tip 取得詞語提示\n".
-							"/score 顯示現在分數\n".
-							"/rule 顯示分數規則\n".
-							"/help 顯示本命令列表";
-						SendMessage($tmid, $msg);
-						break;
-					
-					default:
-						SendMessage($tmid, "沒有這個命令");
-						break;
-				}
+					} else {
+						$wordlist = GetWords("", $game->getwordlist());
+						$word = $wordlist[array_rand($wordlist)];
+						SendMessage($tmid, "請隨意輸入一個詞語\n".
+							"想從「".$word."」開始嗎？");
+					}
+					$iscommand = true;
+					break;
+				
+				case 'list':
+					if ($game->isstart()) {
+						SendMessage($tmid, "我們已講出了".$game->getwordcount()."個詞語：\n".$game->printwordlist());
+					} else {
+						SendMessage($tmid, "遊戲還沒開始");
+					}
+					$iscommand = true;
+					break;
+				
+				case 'score':
+					SendMessage($tmid, "您分數剩下 ".$game->getscore());
+					$iscommand = true;
+					break;
+				
+				case 'rule':
+					$rule = $game->getrule();
+					SendMessage($tmid, "分數規則\n".
+						"起始分數 ".sprintf("%+d", $rule['Start'])." 分\n".
+						"答案不在辭典 ".sprintf("%+d", $rule['Notfound'])." 分\n".
+						"使用提示 ".sprintf("%+d", $rule['Tip'])." 分\n".
+						"回答重複 ".sprintf("%+d", $rule['Repeat'])." 分\n".
+						"回答正確 ".sprintf("%+d", $rule['Answer'])." 分");
+					$iscommand = true;
+					break;
+				
+				case 'help':
+					$msg = "可用命令\n".
+						"giveup 放棄結束遊戲\n".
+						"hint 取得詞語提示\n".
+						"score 顯示現在分數\n".
+						"rule 顯示分數規則\n".
+						"help 顯示本命令列表";
+					SendMessage($tmid, $msg);
+					$iscommand = true;
+					break;
+			}
+			if ($iscommand) {
 				continue;
 			}
 			if (mb_strlen($input) < 2) {
@@ -172,12 +175,12 @@ foreach ($row as $temp) {
 			}
 			if (preg_match("/[A-Za-z0-9]+/", $input) || strpbrk($input, ",.\/:;'\"<>?[]{}\\|-=_+*()~!@#$%\^&") !== false) {
 				SendMessage($tmid, "僅可輸入中文字及中文標點符號\n".
-					"取得命令列表輸入 /help");
+					"取得命令列表輸入 help");
 				continue;
 			}
 			if ($game->checkanadiplosis($input)) {
 				SendMessage($tmid, "您輸入的詞語不銜接上一個詞「".$game->getlastword()."」\n".
-					"取得命令列表輸入 /help");
+					"取得命令列表輸入 help");
 				continue;
 			}
 			if (($score = $game->checkrepeat($input)) !== false) {
@@ -221,8 +224,8 @@ foreach ($row as $temp) {
 					} else {
 						SendMessage($tmid, "您輸入的詞語在辭典裡找不到，請再想一個\n".
 							"您分數剩下 ".$score."\n".
-							"想不到可輸入 /tip\n".
-							"取得命令列表輸入 /help");
+							"想不到可輸入 hint\n".
+							"取得命令列表輸入 help");
 					}
 					unset($game);
 				} else {
@@ -230,7 +233,7 @@ foreach ($row as $temp) {
 					$word = $wordlist[array_rand($wordlist)];
 					SendMessage($tmid, "您輸入的詞語在辭典裡找不到，請再想一個\n".
 						"或者可以從「".$word."」開始？\n".
-						"取得命令列表輸入 /help");
+						"取得命令列表輸入 help");
 				}
 				continue;
 			}
@@ -300,7 +303,7 @@ foreach ($row as $temp) {
 						$msg .= "\n您達到 ".$score." 分了！";
 					}
 					if (count($wordlist) <= 10 && count($wordlist) > 0) {
-						$msg .= "\n想不到可輸入 /tip";
+						$msg .= "\n想不到可輸入 hint";
 					}
 					SendMessage($tmid, $msg);
 					unset($game);
