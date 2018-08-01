@@ -1,21 +1,20 @@
 <?php
-function SendMessage($tmid, $message) {
+function SendMessage($sid, $message) {
 	global $C, $G;
-	$post = array(
-		"message" => $message,
+	$post = [
+		"recipient" => [
+			"id" => $sid
+		],
+		"message" => [
+			"text" => $message
+		],
 		"access_token" => $C['FBpagetoken']
-	);
-	$res = cURL($C['FBAPI'].$tmid."/messages", $post);
+	];
+	$res = cURL($C['FBAPI']."me/messages", $post);
 	$res = json_decode($res, true);
 	if (isset($res["error"])) {
-		WriteLog("[smsg][error] res=".json_encode($res)." tmid=".$tmid." msg=".$message);
-		if ($res["error"]["code"] === 230) {
-			$sth = $G["db"]->prepare("UPDATE `{$C['DBTBprefix']}user` SET `mark` = -1 WHERE `tmid` = :tmid");
-			$sth->bindValue(":tmid", $tmid);
-			$sth->execute();
-			WriteLog("[fbmsg][info][block] tmid=".$tmid);
-		}
-		return $res["error"];
+		WriteLog("[smsg][error] res=".json_encode($res)." sid=".$sid." msg=".$message);
+		return false;
 	}
 	return true;
 }

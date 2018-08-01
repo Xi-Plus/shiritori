@@ -21,13 +21,6 @@ CREATE TABLE `shiritori_log` (
   `hash` varchar(32) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE `shiritori_user` (
-  `uid` varchar(255) NOT NULL,
-  `tmid` varchar(255) NOT NULL,
-  `sid` varchar(255) NOT NULL DEFAULT '',
-  `name` varchar(255) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
 CREATE TABLE `shiritori_word` (
   `word` varchar(255) NOT NULL,
   `source` tinyint(4) NOT NULL DEFAULT '1'
@@ -39,9 +32,6 @@ ALTER TABLE `shiritori_input`
 
 ALTER TABLE `shiritori_log`
   ADD UNIQUE KEY `hash` (`hash`);
-
-ALTER TABLE `shiritori_user`
-  ADD UNIQUE KEY `tmid` (`tmid`);
 
 ALTER TABLE `shiritori_word`
   ADD UNIQUE KEY `word` (`word`);
